@@ -1,13 +1,16 @@
 angular.module('starter.controllers', [])
 
 .controller('MapCtrl', function($scope, $ionicLoading) {
+  var markers = [];  // memoised markers
+
   $scope.mapCreated = function(map) {
     $scope.map = map;
     $scope.centerOnMe();
   };
 
   $scope.centerOnMe = function () {
-    console.log("Centering");
+    //console.log("Centering");
+
     if (!$scope.map) { return; }  // if map not ready yet
 
     $scope.loading = $ionicLoading.show({
@@ -30,7 +33,9 @@ angular.module('starter.controllers', [])
       // Drop a bunch of "critical incident" markers, so the user
       // can see where the problems are relative to their known position
       // these are just hacked for the hackathon, so TODO this function should be removed in production
-      console.log('Dropping markers');
+      //console.log('Dropping markers');
+
+      clearExistingIncidentMarkers();
 
       var you_are_here = new google.maps.Marker({
         position: { lat: pos.coords.latitude, lng: pos.coords.longitude },
@@ -39,34 +44,58 @@ angular.module('starter.controllers', [])
         title: 'You are here'
       });
 
+      markers.push(you_are_here);
+
       var hazards = [
-        { lat: 0.001, lng: 0.003, description: 'car crash' },
-        { lat: -0.001, lng: 0, description: 'building fire' },
-        { lat: 0.003, lng: -0.005, description: 'shooting' },
-        { lat: 0.0, lng: 0.006, description: 'chemical spill' }
+        // icons are from https://mapicons.mapsmarker.com/category/markers/events/
+        { lat: 0.001,  lng: 0.003,  summary: 'car crash',      icon: 'caraccident.png', description: '4WD crashed into a tree' },
+        { lat: -0.001, lng: 0,      summary: 'building fire',  icon: 'fire.png',        description: 'Building on fire. Suspected arson' },
+        { lat: 0.003,  lng: -0.005, summary: 'shooting',       icon: 'shooting.png',    description: 'Guy taking pot shots'     },
+        { lat: 0.0,    lng: 0.006,  summary: 'chemical spill', icon: 'radiation.png',   description: 'Suspected terrorist with dirty bomb. Get out of there!' }
       ];
 
       for (var i = 0; i < hazards.length; i++) {
-        var hazard = hazards[i];
+        var incident   = hazards[i],
+            marker     = dropIncidentMarker(incident),
+            infoWindow = createInfoWindow(incident);
 
-        console.log(hazard);
+        markers.push(marker);  // so we can delete them later
+        addClickListener(marker, infoWindow);
+      }
 
-        var infoWindow = new google.maps.InfoWindow({
-          content: hazard.description
-        });
+      function clearExistingIncidentMarkers() {
+        for (var i = 0; i < markers.length; i++) {
+          markers[i].setMap(null);
+        }
 
-        var marker = new google.maps.Marker({
-          position: { lat: pos.coords.latitude + hazard.lat, lng: pos.coords.longitude  + hazard.lng },
+        markers = [];
+      }
+
+      function dropIncidentMarker(incident) {
+        //console.log('Adding marker for ' + incident);
+
+        return new google.maps.Marker({
+          position: {lat: pos.coords.latitude + incident.lat, lng: pos.coords.longitude + incident.lng},
           map: $scope.map,
-          icon: 'img/hazard.png',
-          title: 'Bad stuff happening'
+          icon: 'img/' + incident.icon,
+          title: incident.summary  // tooltip
         });
+      }
+
+      function createInfoWindow(incident) {
+        //console.log('Adding infoWindow for ' + incident);
+        return new google.maps.InfoWindow({content: incident.description});
+      }
+
+      function addClickListener(marker, infoWindow) {
+        //console.log('attaching click listener for ' + marker);
 
         marker.addListener('click', function() {
           console.log(marker);
           infoWindow.open($scope.map, marker);
         });
       }
+
     }
   };
 });
