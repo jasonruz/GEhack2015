@@ -32,10 +32,6 @@
     </ion-header-bar>
 
     <ion-content scroll="false">
-      <map on-create="mapCreated(map)"></map>
-    </ion-content>
-
-    <ion-content scroll="false">
       <div class="button-bar">
         <a class="button button-balanced">Okay</a>
         <a class="button button-assertive">NOT Okay!</a>
@@ -46,6 +42,7 @@
           <input type="text" placeholder="Reply">
         </label>
       </div>
+      <map on-create="mapCreated(map)"></map>
     </ion-content>
 
     <ion-footer-bar class="bar-stable">
