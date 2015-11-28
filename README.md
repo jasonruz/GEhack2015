@@ -8,6 +8,8 @@ install Cordova and Ionic, as described at http://ionicframework.com/getting-sta
 shows how to install iOS and Android platform support, so that you can run the app on a physical device
 and access the device hardware if desired.
 
+Ionic's Creator UI (https://creator.ionic.io/) is a good visual way to create the skeleton of a mobile app, though it doesn't currently support the Maps starter template, which the command line interface does.
+
 The initial version of this project was created using the command:
 
   `ionic start directory_name maps`
