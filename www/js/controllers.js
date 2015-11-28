@@ -1,11 +1,57 @@
-angular.module('starter.controllers', [])
+angular.module('starter.controllers', ['ngResource'])
 
-.controller('MapCtrl', function($scope, $ionicLoading) {
+.controller('MapCtrl', function($scope, $ionicLoading, $resource, $timeout) {
   var markers = [];  // memoised markers
 
   $scope.mapCreated = function(map) {
     $scope.map = map;
     $scope.centerOnMe();
+
+    var fromTime;
+    getReplies();
+
+    // Get replies from server
+    function getReplies() {
+      var Replies = $resource('http://hackapi-dev.elasticbeanstalk.com/api/Reply');
+      var replies = Replies.query(function () {
+        console.log(replies);
+        parseReplies(replies);
+
+        // Poll server
+        fromTime = Date.now();
+        $timeout(getReplies, 2000);
+      });
+    }
+
+    function parseReplies(replies) {
+      for (var i = 0; i < replies.length; i++) {
+        // Check if reply is new
+        if (fromTime) {
+          if (Date.parse(replies[i].Sent) < fromTime) {
+            continue;
+          }
+        }
+
+        console.log(replies[i]);
+
+        // Split text from format {lat},{long}
+        if (replies[i].Text) {
+          var coords = replies[i].Text.split(',');
+          if (!isNaN(coords[0]) || !isNaN(coords[1])) {
+            console.log('lat ' + coords[0] + ', long ' + coords[1])
+            var someone = new google.maps.Marker({
+              position: { lat: parseFloat(coords[0]), lng: parseFloat(coords[1]) },
+              map: $scope.map,
+              icon: 'img/man.png',
+              title: 'Someone is here'
+            });
+          } else {
+            $scope.replyText = $scope.replyText + '\n' + replies[i].Text;
+          }
+        }
+      };
+    }
+
   };
 
   $scope.centerOnMe = function () {
