@@ -1,7 +1,13 @@
 angular.module('starter.controllers', ['ngResource'])
 
 .controller('MapCtrl', function($scope, $ionicLoading, $resource, $timeout) {
-  var markers = [];  // memoised markers
+  var markers = [],  // memoised markers
+      phoneNumbers = [
+        { number: "1234",        name: 'Jason' },
+        { number: "61431884676", name: 'Ronald' },
+        { number: "61421757888", name: 'Vidit' },
+        { number: "2222",        name: 'Richard' }
+      ];
 
   $scope.mapCreated = function(map) {
     $scope.map = map;
@@ -25,34 +31,67 @@ angular.module('starter.controllers', ['ngResource'])
 
     function parseReplies(replies) {
       for (var i = 0; i < replies.length; i++) {
+        var reply = replies[i];
+
         // Check if reply is new
         if (fromTime) {
-          if (Date.parse(replies[i].Sent) < fromTime) {
+          if (Date.parse(reply.Sent) < fromTime) {
             continue;
           }
         }
 
-        console.log(replies[i]);
+        console.log(reply);
 
         // Split text from format {lat},{long}
-        if (replies[i].Text) {
-          var coords = replies[i].Text.split(',');
+        if (reply.Text) {
+          var coords = reply.Text.split(',');
           if (!isNaN(coords[0]) || !isNaN(coords[1])) {
-            console.log('lat ' + coords[0] + ', long ' + coords[1])
+            console.log('lat ' + coords[0] + ', long ' + coords[1]);
+
+            var personName = nameFromPhoneNumber(reply.From);
+
             var someone = new google.maps.Marker({
               position: { lat: parseFloat(coords[0]), lng: parseFloat(coords[1]) },
               map: $scope.map,
               icon: 'img/man.png',
-              title: 'Someone is here'
+              title: personName + ' is here'
             });
+
+            console.dir(someone);
+            var infoWindow = createInfoWindow({content: personName});
+            addClickListener(someone, infoWindow);
           } else {
-            $scope.replyText = $scope.replyText + '\n' + replies[i].Text;
+            $scope.replyText = $scope.replyText + '\n' + reply.Text;
           }
         }
-      };
+      }
     }
 
   };
+
+  function nameFromPhoneNumber(phoneNumber) {
+    var i,
+      personName = 'Unknown',
+      phoneDetail;
+
+    if (isNaN(phoneNumber)) {
+      console.log(phoneNumber + ' is not a phone number');
+      return phoneNumber;  // already some kind of non-numeric identifier
+    }
+
+    // Map phone number to name
+    for (i = 0; i < phoneNumbers.length; i++) {
+      phoneDetail = phoneNumbers[i];
+
+      if (phoneDetail.number = phoneNumber) {
+        personName = phoneDetail.name;
+        break;
+      }
+    }
+
+    console.log('Phone number ' + phoneNumber + ' -> ' + personName);
+    return personName;
+  }
 
   $scope.centerOnMe = function () {
     //console.log("Centering");
@@ -83,14 +122,14 @@ angular.module('starter.controllers', ['ngResource'])
 
       clearExistingIncidentMarkers();
 
-      var you_are_here = new google.maps.Marker({
-        position: { lat: pos.coords.latitude, lng: pos.coords.longitude },
-        map: $scope.map,
-        icon: 'img/man.png',
-        title: 'You are here'
-      });
-
-      markers.push(you_are_here);
+      //var you_are_here = new google.maps.Marker({
+      //  position: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+      //  map: $scope.map,
+      //  icon: 'img/man.png',
+      //  title: 'You are here'
+      //});
+      //
+      //markers.push(you_are_here);
 
       var hazards = [
         // icons are from https://mapicons.mapsmarker.com/category/markers/events/
@@ -103,7 +142,7 @@ angular.module('starter.controllers', ['ngResource'])
       for (var i = 0; i < hazards.length; i++) {
         var incident   = hazards[i],
             marker     = dropIncidentMarker(incident),
-            infoWindow = createInfoWindow(incident);
+            infoWindow = createInfoWindow({content: incident.description});
 
         markers.push(marker);  // so we can delete them later
         addClickListener(marker, infoWindow);
@@ -127,21 +166,21 @@ angular.module('starter.controllers', ['ngResource'])
           title: incident.summary  // tooltip
         });
       }
-
-      function createInfoWindow(incident) {
-        //console.log('Adding infoWindow for ' + incident);
-        return new google.maps.InfoWindow({content: incident.description});
-      }
-
-      function addClickListener(marker, infoWindow) {
-        //console.log('attaching click listener for ' + marker);
-
-        marker.addListener('click', function() {
-          console.log(marker);
-          infoWindow.open($scope.map, marker);
-        });
-      }
-
     }
   };
+
+
+  function createInfoWindow(info) {
+    return new google.maps.InfoWindow(info);
+  }
+
+  function addClickListener(marker, infoWindow) {
+    //console.log('attaching click listener for ' + marker);
+
+    marker.addListener('click', function() {
+      console.log(marker);
+      infoWindow.open($scope.map, marker);
+    });
+  }
+
 });
