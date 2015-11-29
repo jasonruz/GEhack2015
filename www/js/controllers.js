@@ -42,11 +42,11 @@ angular.module('starter.controllers', ['ngResource'])
         // Split text from format {lat},{long}
         if (reply.Text) {
           var coords = reply.Text.split(',');
+          var personName = nameFromPhoneNumber(reply.From);
 
           if (!isNaN(coords[0]) || !isNaN(coords[1])) {
             console.log('lat ' + coords[0] + ', long ' + coords[1]);
 
-            var personName = nameFromPhoneNumber(reply.From);
             var pesonMarker = dropPersonMarker(personName, coords);
 
             var replyText = reply.Text || 'No reply yet';
@@ -55,7 +55,7 @@ angular.module('starter.controllers', ['ngResource'])
             var infoWindow = createInfoWindow({content: infoWindowContent});
             addClickListener(pesonMarker, infoWindow);
           } else {
-            //$scope.replyText = $scope.replyText + '\n' + reply.Text;
+            $scope.replyText = ($scope.replyText || '') + '  ' + personName + ':' + reply.Text + '...';
           }
         }
       }
@@ -114,7 +114,7 @@ angular.module('starter.controllers', ['ngResource'])
       $scope.loading.hide();
 
       // TODO: remove these phoney markers close to current location after the hackathon
-      dropIncidentMarkers(pos);
+      //dropIncidentMarkers(pos);
     }, function (error) {
       alert('Unable to get location: ' + error.message);
     });
