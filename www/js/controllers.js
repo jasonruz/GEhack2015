@@ -1,12 +1,102 @@
-angular.module('starter.controllers', [])
+angular.module('starter.controllers', ['ngResource'])
 
-.controller('MapCtrl', function($scope, $ionicLoading) {
-  var markers = [];  // memoised markers
+.controller('MapCtrl', function($scope, $ionicLoading, $resource, $timeout) {
+  var markers = [],  // memoised markers
+      phoneNumbers = [
+        { number: "12345678",    name: 'corresponding name' },
+      ];
 
   $scope.mapCreated = function(map) {
     $scope.map = map;
     $scope.centerOnMe();
+
+    var fromTime;
+    getReplies();
+
+    // Get replies from server
+    function getReplies() {
+      var Replies = $resource('http://hackapi-dev.elasticbeanstalk.com/api/Reply');
+      var replies = Replies.query(function () {
+        console.log(replies);
+        parseReplies(replies);
+
+        // Poll server
+        fromTime = Date.now();
+        $timeout(getReplies, 2000);
+      });
+    }
+
+    function parseReplies(replies) {
+      for (var i = 0; i < replies.length; i++) {
+        var reply = replies[i];
+
+        // Check if reply is new
+        if (fromTime) {
+          if (Date.parse(reply.Sent) < fromTime) {
+            continue;
+          }
+        }
+
+        console.log(reply);
+
+        // Split text from format {lat},{long}
+        if (reply.Text) {
+          var coords = reply.Text.split(',');
+          var personName = nameFromPhoneNumber(reply.From);
+
+          if (!isNaN(coords[0]) || !isNaN(coords[1])) {
+            console.log('lat ' + coords[0] + ', long ' + coords[1]);
+
+            var pesonMarker = dropPersonMarker(personName, coords);
+
+            var replyText = reply.Text || 'No reply yet';
+            var msgId = reply.MsgId || '';
+            var infoWindowContent = '<b>' + personName + '</b><br/><i>' + replyText + '</i><br/>' + msgId + '</i>';
+            var infoWindow = createInfoWindow({content: infoWindowContent});
+            addClickListener(pesonMarker, infoWindow);
+          } else {
+            $scope.replyText = ($scope.replyText || '') + '  ' + personName + ':' + reply.Text + '...';
+          }
+        }
+      }
+    }
+
   };
+
+  function dropPersonMarker(personName, coords) {
+      console.log('Adding person marker for ' + personName);
+
+    return new google.maps.Marker({
+      position: { lat: parseFloat(coords[0]), lng: parseFloat(coords[1]) },
+      map: $scope.map,
+      icon: 'img/man.png',
+      title: personName + ' is here'
+    });
+  }
+
+  function nameFromPhoneNumber(phoneNumber) {
+    var i,
+      personName = 'Unknown',
+      phoneDetail;
+
+    if (isNaN(phoneNumber)) {
+      console.log(phoneNumber + ' is not a phone number');
+      return phoneNumber;  // already some kind of non-numeric identifier
+    }
+
+    // Map phone number to name
+    for (i = 0; i < phoneNumbers.length; i++) {
+      phoneDetail = phoneNumbers[i];
+
+      if (phoneDetail.number == phoneNumber) {
+        personName = phoneDetail.name;
+        break;
+      }
+    }
+
+    console.log('Phone number ' + phoneNumber + ' -> ' + personName);
+    return personName;
+  }
 
   $scope.centerOnMe = function () {
     //console.log("Centering");
@@ -24,7 +114,7 @@ angular.module('starter.controllers', [])
       $scope.loading.hide();
 
       // TODO: remove these phoney markers close to current location after the hackathon
-      dropIncidentMarkers(pos);
+      //dropIncidentMarkers(pos);
     }, function (error) {
       alert('Unable to get location: ' + error.message);
     });
@@ -37,14 +127,14 @@ angular.module('starter.controllers', [])
 
       clearExistingIncidentMarkers();
 
-      var you_are_here = new google.maps.Marker({
-        position: { lat: pos.coords.latitude, lng: pos.coords.longitude },
-        map: $scope.map,
-        icon: 'img/man.png',
-        title: 'You are here'
-      });
-
-      markers.push(you_are_here);
+      //var you_are_here = new google.maps.Marker({
+      //  position: { lat: pos.coords.latitude, lng: pos.coords.longitude },
+      //  map: $scope.map,
+      //  icon: 'img/man.png',
+      //  title: 'You are here'
+      //});
+      //
+      //markers.push(you_are_here);
 
       var hazards = [
         // icons are from https://mapicons.mapsmarker.com/category/markers/events/
@@ -57,7 +147,7 @@ angular.module('starter.controllers', [])
       for (var i = 0; i < hazards.length; i++) {
         var incident   = hazards[i],
             marker     = dropIncidentMarker(incident),
-            infoWindow = createInfoWindow(incident);
+            infoWindow = createInfoWindow({content: incident.description});
 
         markers.push(marker);  // so we can delete them later
         addClickListener(marker, infoWindow);
@@ -81,21 +171,21 @@ angular.module('starter.controllers', [])
           title: incident.summary  // tooltip
         });
       }
-
-      function createInfoWindow(incident) {
-        //console.log('Adding infoWindow for ' + incident);
-        return new google.maps.InfoWindow({content: incident.description});
-      }
-
-      function addClickListener(marker, infoWindow) {
-        //console.log('attaching click listener for ' + marker);
-
-        marker.addListener('click', function() {
-          console.log(marker);
-          infoWindow.open($scope.map, marker);
-        });
-      }
-
     }
   };
+
+
+  function createInfoWindow(info) {
+    return new google.maps.InfoWindow(info);
+  }
+
+  function addClickListener(marker, infoWindow) {
+    //console.log('attaching click listener for ' + marker);
+
+    marker.addListener('click', function() {
+      console.log(marker);
+      infoWindow.open($scope.map, marker);
+    });
+  }
+
 });
