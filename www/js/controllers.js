@@ -3,10 +3,7 @@ angular.module('starter.controllers', ['ngResource'])
 .controller('MapCtrl', function($scope, $ionicLoading, $resource, $timeout) {
   var markers = [],  // memoised markers
       phoneNumbers = [
-        { number: "1234",        name: 'Jason' },
-        { number: "61431884676", name: 'Ronald' },
-        { number: "61421757888", name: 'Vidit' },
-        { number: "2222",        name: 'Richard' }
+        { number: "12345678",    name: 'corresponding name' },
       ];
 
   $scope.mapCreated = function(map) {
@@ -45,29 +42,37 @@ angular.module('starter.controllers', ['ngResource'])
         // Split text from format {lat},{long}
         if (reply.Text) {
           var coords = reply.Text.split(',');
+
           if (!isNaN(coords[0]) || !isNaN(coords[1])) {
             console.log('lat ' + coords[0] + ', long ' + coords[1]);
 
             var personName = nameFromPhoneNumber(reply.From);
+            var pesonMarker = dropPersonMarker(personName, coords);
 
-            var someone = new google.maps.Marker({
-              position: { lat: parseFloat(coords[0]), lng: parseFloat(coords[1]) },
-              map: $scope.map,
-              icon: 'img/man.png',
-              title: personName + ' is here'
-            });
-
-            console.dir(someone);
-            var infoWindow = createInfoWindow({content: personName});
-            addClickListener(someone, infoWindow);
+            var replyText = reply.Text || 'No reply yet';
+            var msgId = reply.MsgId || '';
+            var infoWindowContent = '<b>' + personName + '</b><br/><i>' + replyText + '</i><br/>' + msgId + '</i>';
+            var infoWindow = createInfoWindow({content: infoWindowContent});
+            addClickListener(pesonMarker, infoWindow);
           } else {
-            $scope.replyText = $scope.replyText + '\n' + reply.Text;
+            //$scope.replyText = $scope.replyText + '\n' + reply.Text;
           }
         }
       }
     }
 
   };
+
+  function dropPersonMarker(personName, coords) {
+      console.log('Adding person marker for ' + personName);
+
+    return new google.maps.Marker({
+      position: { lat: parseFloat(coords[0]), lng: parseFloat(coords[1]) },
+      map: $scope.map,
+      icon: 'img/man.png',
+      title: personName + ' is here'
+    });
+  }
 
   function nameFromPhoneNumber(phoneNumber) {
     var i,
@@ -83,7 +88,7 @@ angular.module('starter.controllers', ['ngResource'])
     for (i = 0; i < phoneNumbers.length; i++) {
       phoneDetail = phoneNumbers[i];
 
-      if (phoneDetail.number = phoneNumber) {
+      if (phoneDetail.number == phoneNumber) {
         personName = phoneDetail.name;
         break;
       }

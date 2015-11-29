@@ -47,12 +47,14 @@
           <!--<input type="text" placeholder="Reply">-->
         <!--</label>-->
       <!--</div>-->
+
       <map on-create="mapCreated(map)"></map>
+      <statuslist></statuslist>
     </ion-content>
 
     <ion-footer-bar class="bar-stable">
       <a ng-click="centerOnMe()" class="button button-icon icon ion-navigate"></a>
-      Replies: <span ng-bind="replyText"></span>
+      <!--Replies: <span ng-bind="replyText"></span>-->
     </ion-footer-bar>
   </body>
 </html>
